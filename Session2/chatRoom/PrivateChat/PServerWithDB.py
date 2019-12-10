@@ -6,7 +6,7 @@ import sqlite3
 from datetime import datetime
 
 IP = ''
-PORT = 5721
+PORT = 5722
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
