@@ -5,7 +5,7 @@ import threading
 
 #select none blicking : hamzaman hame darkhast ha ro handle mikone
 #0 : offline , 1 : online , 2 : busy
-IP = 'localhost'
+IP = ''
 PORT = 1235
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

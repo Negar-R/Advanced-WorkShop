@@ -22,113 +22,88 @@ clients = {}
 mark = {}
 
 
-class db_connection():
-    def __init__(self):
-        pass
+# class db_connection():
+#     def __init__(self):
+#         pass
 
-    __instance = None
+#     __instance = None
 
-    def __new__(cls):
-        if not A.__instance:
-            A.__instance = super().__new__(cls) 
-        return A.__instance
+#     def __new__(cls):
+#         if not db_connection.__instance:
+#             db_connection.__instance = super().__new__(cls) 
+#         return db_connection.__instance
 
-    def createDB(self , dbName):
-        conn = sqlite3.connect(dbName)
-        return conn 
+#     def createDB(self , dbName):
+#         conn = sqlite3.connect(dbName)
+#         return conn 
 
+def findContact(client_socket , user):
+    conn = sqlite3.connect("PrivateChat.db")
 
-def dbQueryByParam(dbCursor, query):
-    try:
-        dbCursor.execute(query)
-        return True
-    except:
-        return False
+    cursor1 = conn.cursor()
+    # cursor1.execute("DROP TABLE users")
+    cursor1.execute("CREATE TABLE IF NOT EXISTS users(ID INTEGER PRIMARY KEY AUTOINCREMENT , USERNAME VARCHAR(255) , CONTACT VARCHAR(255) , ONLINE VARCHAR(255) DEFAULT 'offline' , BUSY VARCHAR(255) DEFAULT 'free')")
+    
+    cursor1.execute("SELECT * FROM users WHERE USERNAME = ?" , (user ,))
+    p = cursor1.fetchall()
+    if not len(p):
+        info = (user , 'online')
+        cursor1.execute("INSERT INTO users(USERNAME , ONLINE) VALUES(? , ?)" , info)
+        conn.commit()
+    else:
+        cursor1.execute("UPDATE users SET BUSY = 'free' WHERE USERNAME = ?" , (user ,))
+        conn.commit()
+    # test:
+    cursor1.execute("SELECT * FROM users")
+    p = cursor1.fetchall() 
+    for i in p:
+        print("In loop : " , i , type(i))
 
-
-def dbQueryBylist(dbCursor, query, myList):
-    try:
-        dbCursor.executemany(query, myList)
-        return True
-    except:
-        return False
-
-def findContact(client_socket , user , conn , cursor1):
     while True:
-
-        print("in find contact")
 
         client_socket.send(bytes("Who do you want to chat with?", 'utf-8'))
         contact = client_socket.recv(1024).decode("utf-8")
 
-        Query = "SELECT USERNAME FROM users"
-        dbQuery = dbQueryByParam(cursor1 , Query)
-        if contact not in dbQuery:
+        cursor1.execute("SELECT * FROM users WHERE USERNAME = ?" , (contact ,))
+        s = cursor1.fetchall()
+        if not len(s):
             client_socket.send(bytes("{} does not register".format(contact), 'utf-8'))
-
         else:
-            Query = "SELECT CONTACT FROM users WHERE USERNAME = contact"
-            dbQuery = dbQueryByParam(cursor1 , Query)
-            if user in Query:
-                # mark[user] = contact
-                Query1 = "UPDATE users SET CONTACT = contact , BUSY = TRUE WHERE USERNAME = user"
-                dbQuery = dbQueryByParam(cursor1 , Query1)
-                if dbQuery:
-                    conn.commit()
-                clients[client_socket] = (user , contact)
-                client_socket.send(bytes("Start to chat with {}".format(contact), 'utf-8'))
-            else:
-                Query = "SELECT BUSY FROM users WHERE USERNAME = contact"
-                if Query == True:
-                    client_socket.send(bytes("{} is busy now".format(contact) , 'utf-8'))
-
-            Query = "SELECT STATUS FROM users WHERE USERNAME = contact"
-            dbQuery = dbQueryByParam(cursor1 , Query)
-            if Query == False:
+            if s[0][3] == 'offline': # Offline
                 client_socket.send(bytes("{} is offline now".format(contact), 'utf-8'))
-
-            Query = "SELECT STATE , BUSY FROM users WHERE USERNAME = contact"
-            if Query[0] == True and Query[1] == False:
-                Query1 = "UPDATE users SET CONTACT = contact , BUSY = TRUE WHERE USERNAME = user"
-                dbQuery = dbQueryByParam(cursor1 , Query1)
-                if dbQuery:
+            else: # Online
+                if s[0][2] == user: # Correct Contact
+                    cursor1.execute("UPDATE users SET CONTACT = contact , BUSY = 'busy'  WHERE USERNAME = ?" , (user ,))
                     conn.commit()
-                clients[client_socket] = (user , contact)
-                client_socket.send(bytes("Start to chat with {}".format(contact), 'utf-8'))
+                    clients[client_socket] = (user , contact)
+                    client_socket.send(bytes("Start to chat with {}".format(contact), 'utf-8'))
+                    return
+                elif s[0][2] == None: # Online And Free 
+                    cursor1.execute("UPDATE users SET CONTACT = contact  , BUSY = 'busy'  WHERE USERNAME = ?" , (user ,))
+                    conn.commit()
+                    clients[client_socket] = (user , contact)
+                    client_socket.send(bytes("Start to chat with {}".format(contact), 'utf-8'))
+                    return    
+                else: # Have Another Contact
+                    client_socket.send(bytes("{} is busy now".format(contact) , 'utf-8'))
+                
 
-
-
-dconn = db_connection()
-conn = dconn.createDB("PrivateChat.db")
-
-cursor1 = conn.cursor()
-Query = "CREATE TABLE IF NOT EXISTS users(ID PRIMARY KEY AUTOINCREMENT , USERNAME VARCHAR(255) , CONTACT VARCHAR(255) , ONLINE BOOLEAN , STATE VARCHAR(255)"
-dbQueryByParam(cursor1 , Query)
-
-
+conn = sqlite3.connect("PrivateChat.db")
 
 cursor2 = conn.cursor()
-Query = "CREATE TABLE IF NOT EXISTS chats(SENDER VAECHAR(255) , RECIVER VARCHAR(255)) , MESSAGE TEXT , DATE TEXT"
-dbQueryByParam(cursor2 , Query)
-
-
+# cursor2.execute("DROP TABLE chats")
+cursor2.execute("CREATE TABLE IF NOT EXISTS chats(SENDER VAECHAR(255) , RECEIVER VARCHAR(255) , MESSAGE TEXT , DATE TEXT)")
 
 while True:
-
-    print("in the begining of while")
 
     read_socket, write_socket, exception_socket = select.select(
         socket_list, [], socket_list)
     for s in read_socket:
         if s == server_socket: 
 
-            print("tcp connection")
-
             client_socket, address = server_socket.accept() 
 
-            if client_socket:  
-
-                print("in client_socket")
+            if client_socket: 
 
                 client_socket.send(bytes("welcome!" , 'utf-8'))
 
@@ -136,16 +111,9 @@ while True:
 
                 client_socket.send(bytes("Enter Your Name : ", 'utf-8'))
                 user = client_socket.recv(1024).decode("utf-8")
-
-                #mark[user] = 1
-                Query = "INSERT INTO users(USERNAME , ONLINE) VALUES(? , ?)"
-                info = (user , True)
-                dbQuery = dbQueryBylist(cursor1 , Query , info)
                 
-                t = threading.Thread(target = findContact , args = (client_socket , user , conn , cursor1))
+                t = threading.Thread(target = findContact , args = (client_socket , user))
                 t.start()
-
-                print("After thread")
 
                 socket_list.append(client_socket)
                 addr = address[0] 
@@ -158,14 +126,15 @@ while True:
             for client_socket in clients.keys():
                 if clients[client_socket][0] == clients[s][1]:
                     client_socket.send(message)
-                    Query = "INSERT INTO chats(SENDER , RECIEVER , MESSAGE , DATE) VALUES(? , ? , ? , ?)"
-                    info = (clients[client_socket][0] , clients[client_socket][1] , message , datetime.now())
-                    dbQuery = dbQueryByParam(cursor2 , Query , info)
-                    if dbQuery:
-                        conn.commit()
-                    #test :     
-                    Query = "SELECT * FROM chats"
-                    dbQueryByParam(cursor2 , Query)    
+
+                    info = (clients[client_socket][1] , clients[client_socket][0] , message.decode("utf-8") , datetime.now())
+                    cursor2.execute("INSERT INTO chats(SENDER , RECEIVER , MESSAGE , DATE) VALUES(? , ? , ? , ?)" , info)
+                    conn.commit()
+                    # test :     
+                    cursor2.execute("SELECT * FROM chats") 
+                    p = cursor2.fetchall()
+                    for i in p:
+                        print(i)  
             
     for s in exception_socket:
         socket_list.remove(s)
