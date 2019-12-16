@@ -1,8 +1,17 @@
 from datetime import datetime
-import pickle
 import uuid
+import sqlite3
 
-listOfMemberInfo = []
+conn = sqlite3.connect("Library.db")
+cursorM = conn.cursor()
+
+cursorM.execute("DROP TABLE members")
+
+cursorM.execute("CREATE TABLE IF NOT EXISTS members(ID VARCHAR(255) PRIMARY KEY , NAME VARCHAR(255) , AGE INTEGER , ENTER TEXT , BORROWEDBOOK TEXT)")
+
+cursorM.execute("CREATE TABLE IF NOT EXISTS admins(ID VARCHAR(255) PRIMARY KEY , NAME VARCHAR(255) , AGE INTEGER)")
+
+conn.commit()
 
 class Members():
     def __init__(self , name , age):
@@ -13,8 +22,8 @@ class Members():
         self.date = datetime.now()
 
     def idGenerator(self):
-        self.iD = uuid.uuid1()
-        # print(self.iD)
+        self.iD = str(uuid.uuid1())
+
 
     def expireCheck(self):
         t = self.date
@@ -31,31 +40,39 @@ class Members():
 
     def addMember(self):
         self.idGenerator()
-        member_info = {'Name' : self.name , 'Age' : self.age , 'Id' : self.iD , 'Register Date' : self.date
-         , 'List of borrowed books' : self.rentedBook}
-        listOfMemberInfo.append(member_info)
-        with open('Members' , 'wb') as m:
-            pickle.dump(listOfMemberInfo , m)
+        info = (self.iD , self.name , self.age , self.date)
+        cursorM.execute("INSERT INTO members(ID , NAME , AGE , ENTER) VALUES(? , ? , ? , ?)" , info)   
+        conn.commit()
 
-    def getListOfBorrowedBook(self):
-        for i in range(len(listOfMemberInfo)):
-            if listOfMemberInfo[i]['Name'] == self.name and listOfMemberInfo[i]['Id'] == self.iD:
-                print(listOfMemberInfo[i]['List of borrowed books'])
+    def addAdmin(self):
+        self.idGenerator()
+        info = (self.iD , self.name , self.age)
+        cursorM.execute("INSERT INTO admins(ID , NAME , AGE) VALUES(? , ? , ?)" , info)   
+        conn.commit() 
 
-        # with open('Members' , 'rb') as m:
-        #     data = pickle.load(m)
-        # print(data)    
+# TEST:
 
+m = Members('Nasim' , 18)
+m.addMember()
 
+mm = Members('Negar' , 20)
+mm.addMember()
 
+cursorM.execute("SELECT * FROM members")
+s = cursorM.fetchall()
 
+for i in s:
+    print(i)
 
-# mm = Members('Negar' , 20)
-# mm.addMember()
+# print("------------------")
 
-# print("name : " , m.name)
-# n = Members('Nasim' , 18)
-# n.idGenerator()
-# m.expireCheck()
-# n.expireCheck()
+# a = Members('Hamid' , 30)
+# a.addAdmin()
 
+# cursorM.execute("SELECT * FROM admins")
+# s = cursorM.fetchall()
+
+# for i in s:
+#     print(i)
+
+# conn.close()

@@ -5,7 +5,7 @@ import select
 import sqlite3
 from datetime import datetime
 
-IP = ''
+IP = 'Localhost'
 PORT = 5723
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -105,11 +105,11 @@ while True:
 
             if client_socket: 
 
-                client_socket.send(bytes("welcome!" , 'utf-8'))
+                # client_socket.send(bytes("welcome!" , 'utf-8'))
 
-                print("Connection Established from {}".format(address))
+                # print("Connection Established from {}".format(address))
 
-                client_socket.send(bytes("Enter Your Name : ", 'utf-8'))
+                # client_socket.send(bytes("Enter Your Name : ", 'utf-8'))
                 user = client_socket.recv(1024).decode("utf-8")
                 
                 t = threading.Thread(target = findContact , args = (client_socket , user))

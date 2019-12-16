@@ -5,7 +5,7 @@ import threading
 
 # IP = '192.168.43.66'
 IP = 'localhost'
-PORT = 5722
+PORT = 5734
 #username = input("Enter your name: ")
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_socket.connect((IP, PORT))
@@ -44,7 +44,7 @@ while True:
             print(message.decode('utf-8'))
 
     except IOError as e:
-        # print("Error")
+        print("Error")
         # pass
         raise e
 

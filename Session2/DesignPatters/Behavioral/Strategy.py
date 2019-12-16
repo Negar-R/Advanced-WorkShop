@@ -8,7 +8,7 @@ class Context():
             #getattr(self , name , impl.strategyInterface) ham doroste
             
         # self.chagu.strategyInterface() : kode get attribute moadel(mosavi) in hast 
-        #dar vaghe un paranteze (self , name) ye object az name(hamun chagu ...) ast ke function 
+        # dar vaghe un paranteze (self , name) ye object az name(hamun chagu ...) ast ke function 
         # strategyInterface ro barash seda mizanim
 
 class Strategy(ABC):
@@ -32,9 +32,9 @@ class Tank(Strategy):
 
 
 def client():
-    bomb = Bomb()
+    b = Bomb()
     chaghu = Chaghu()
-    ashkan = Context(bomb = bomb , chaghu = chaghu) #avali ye variable E va dovomi call class emune
+    ashkan = Context(bomb = b , chaghu = chaghu) #avali ye variable E va dovomi call class emune
 
 
 if __name__ == "__main__":

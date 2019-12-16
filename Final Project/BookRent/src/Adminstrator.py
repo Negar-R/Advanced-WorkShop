@@ -1,18 +1,43 @@
-# import LibraryServer as l
+import sqlite3
+import BookList
 
-# class Admin():
-#     def __init__(self):
-#         pass
+cursorA = BookList.Member.conn.cursor()
+
+class Admin():
+    def __init__(self):
+        pass
+
+    def getInformetionAboutBook(self , bookId):
+
+        BookList.cursorB.execute("SELECT * FROM books WHERE BOOKID = ?" , (bookId ,))
+        s = BookList.cursorB.fetchall()
+
+        for i in s:
+            print(s)
+
+    def getListOfBorrowedBook(self , iD):  
+
+        cursorA.execute("SELECT BORROWEDBOOK FROM members WHERE ID = ?" , (iD ,))
+        s = cursorA.fetchall()
         
-# def validAdmin(self):
-#     l.client_socket.send(bytes("Enter Your Pass" , "utf-8"))
-#     for s in l.read_socket:
-#         message = s.recv(1024)
-#         if message.decode("utf-8") == '123':
-#             l.client_socket.send(bytes("Right Pass" , "utf-8"))
-#         else:
-#             l.client_socket.send(bytes("wrong Pass" , "utf-8")) 
+        print(s)
 
-#     # def validMember(self):
-    #     l.client_socket.send(bytes("Enter Your Pass" , "utf-8"))
-    #     message =          
+
+# b = BookList.Book('OnSherly' , 'L.M.Muntegmary' , 'A' , True , '12' , 1)
+# b2 = BookList.Book('Harry Potter' , 'J.K.Ruling' , 'B' , True , '13' , 2)
+# b3 = BookList.Book('Harry Potter' , 'J.K.Ruling' , 'c' , True , '14' , 2)
+
+# b.addBook()
+# b2.addBook()
+# b3.addBook()
+
+# b2.getInformetionAboutBook()
+# b3.getInformetionAboutBook()
+
+a = Admin()
+# m.getListOfBorrowedBook('12')
+a.getInformetionAboutBook('12')
+
+print("***********")
+
+# a.rentBook('9751bbba-1fcc-11ea-b430-5fe9d1ad5d5b' , 12)

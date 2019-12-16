@@ -1,14 +1,19 @@
-import pickle
 import Member
 
-listOfBookInfo = [] 
+cursorB = Member.conn.cursor()
+
+cursorB.execute("DROP TABLE books")
+
+cursorB.execute('CREATE TABLE IF NOT EXISTS books(NAME VARCHAR(255) , AUTHOR VARCHAR(255) , CATEGORY VARCHAR(255) , INTERNATIONAL BOOLEAN , BOOKID TEXT, STATUS BOOLEAN , COUNT INTEGER , RENT VARCHAR(255))')
+Member.conn.commit()
 
 class Book():
-    def __init__(self , name , author , category , international ,  bookId):
+    def __init__(self , name , author , category , international ,  bookId , count):
         self.name = name
         self.author = author
         self.category = category
         self.bookId = bookId
+        self.count = count
         self.status = True
         self.rent = None
         self.international = international
@@ -20,89 +25,115 @@ class Book():
             self.motarjem = motarjem
 
     def addBook(self):
-        book_info = {'Name' : self.name , 'Author' : self.author , 'Category' : self.category , 
-        'International' : self.international , 'Id' : self.bookId , 'Status' : self.status ,
-        'Rent' : self.rent}
-        listOfBookInfo.append(book_info)
-        with open('Books' , 'wb') as b:
-            pickle.dump(listOfBookInfo , b)  
+        cursorB.execute('INSERT INTO books(NAME , AUTHOR , CATEGORY , INTERNATIONAL , BOOKID , COUNT) VALUES(? , ? , ? , ? , ? , ?)'
+        , (self.name , self.author , self.category , self.international , self.bookId , self.count))
+        
+        Member.conn.commit()
+        print("vayyyyyyyyyyyyy")
 
     def removeBook(self):
-        excit = False 
-        ind = 0    
-        for i in range(len(listOfBookInfo)): 
-            if self.name == listOfBookInfo[i]['Name'] and self.bookId == listOfBookInfo[i]['Id']:
-                excit = True
-                ind = i
-                break
-        if excit:
-            listOfBookInfo.remove(listOfBookInfo[ind])
-            with open('Books' , 'wb') as b:
-                pickle.dump(listOfBookInfo , b)
+        cursorB.execute("SELECT * FROM books WHERE BOOKID = ?" , (self.bookId ,))
+        s = cursorB.fetchall()
 
-            # print(listOfBookInfo)
+        if not len(s):
+            print("There is not any book with this id")
+            return
 
-    def getInformetionAboutBook(self):
-        for i in range(len(listOfBookInfo)):
-            if listOfBookInfo[i]['Id'] == self.bookId:
-                print(listOfBookInfo[i])
+        cursorB.execute("DELETE FROM books WHERE BOOKID = ?" , (self.bookId ,)) 
+
+        try:
+            cursorB.execute("SELECT COUNT FROM books WHERE NAME = ?" , (self.name ,))
+            t = cursorB.fetchall()
+            a = t[0][0] - 1
+
+            cursorB.execute("UPDATE books SET COUNT = ? WHERE NAME = ?" , (a , self.name))
+
+        except:
+            pass    
+
+        Member.conn.commit() 
 
 
     def rentBook(self , member):
         #type(memeber) = object
         if not self.status:
             print("This Book was rented before")
-        if self.status and not member.expireCheck():
-            self.rent = member.iD
-            self.status = False
-            for i in range(len(listOfBookInfo)):
-                if listOfBookInfo[i]['Id'] == self.bookId:
-                    listOfBookInfo[i]['Status'] = self.status
-                    listOfBookInfo[i]['Rent'] = self.rent
-            member.rentedBook.append((self.name , self.bookId))   
-            # print(member.rentedBook)              
-    
-    def whoHaveBook(self):
-        for i in range(len(Member.listOfMemberInfo)):
-            if Member.listOfMemberInfo[i]['Id'] == self.rent:
-                print(Member.listOfMemberInfo[i]['Name'] , Member.listOfMemberInfo[i]['Age'] , 
-                Member.listOfMemberInfo[i]['Id'])
 
-b = Book('OnSherly' , 'L.M.Muntegmary' , 'A' , True , 12)
-b2 = Book('Harry Potter' , 'J.K.Ruling' , 'B' , True , 13)
-b3 = Book('Harry Potter' , 'J.K.Ruling' , 'B' , True , 14)
+        if self.status and not member.expireCheck():
+            self.status = False   
+            cursorB.execute("UPDATE books SET STATUS = False , RENT = ? WHERE BOOKID = ?" , (member.iD , self.bookId))       
+            
+            member.rentedBook.append(self.bookId)
+            Member.cursorM.execute("UPDATE members SET BORROWEDBOOK = ? WHERE ID = ?"  , (str(member.rentedBook) , member.iD))
+            
+        try:
+            cursorB.execute("SELECT COUNT FROM books WHERE NAME = ?" , (self.name ,))
+            t = cursorB.fetchall()
+            a = t[0][0] - 1
+
+            cursorB.execute("UPDATE books SET COUNT = ? WHERE NAME = ?" , (a , self.name))
+
+        except:
+            pass    
+
+        Member.conn.commit() 
+    
+
+
+# if __name__ == "__main__":
+b = Book('OnSherly' , 'L.M.Muntegmary' , 'A' , True , '12' , 1)
+b2 = Book('Harry Potter' , 'J.K.Ruling' , 'B' , True , '13' , 2)
+b3 = Book('Harry Potter' , 'J.K.Ruling' , 'c' , True , '14' , 2)
 
 b.addBook()
 b2.addBook()
 b3.addBook()
 
-b2.removeBook()
+cursorB.execute("SELECT * FROM books")
+s = cursorB.fetchall()
 
-m = Member.Members('Nasim' , 18)
+for i in s:
+    print(i)
+
+
+# print("-------------------")
+
+
+# # b2.removeBook()
+
+# # cursorB.execute("SELECT * FROM books")
+# # s = cursorB.fetchall()
+
+# # for i in s:
+# #     print(i)
+
+
+print("-------------------")    
+
+m = Member.Members('Navid' , 22)
 m.addMember()
 b.rentBook(m)
 b2.rentBook(m)
 
+Member.cursorM.execute("SELECT * FROM members")
+s = Member.cursorM.fetchall()
 
-mm = Member.Members('Negar' , 20)
-mm.addMember()
-b2.rentBook(mm)
-b3.rentBook(mm)
+for i in s:
+    print(i)
 
+# print('------------------')    
 
-# with open('Members' , 'rb') as a:
-#     data = pickle.load(a)
-# print(data)
+# # cursorB.execute("SELECT STATUS FROM books")
+# # s = cursorB.fetchall()
 
-mm.getListOfBorrowedBook()
-m.getListOfBorrowedBook()
+# # for i in s:
+# #     print(i)
 
-print("-------------")
+# print("-------------------")
 
-b2.whoHaveBook()
-b3.whoHaveBook()
+# print("------------------")
 
-print("************")
+# # b2.getInformetionAboutBook()
+# # b3.getInformetionAboutBook()
 
-# b2.getInformetionAboutBook()
-b3.getInformetionAboutBook()
+# # Member.conn.close()
